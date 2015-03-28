@@ -63,6 +63,12 @@ class VARZClient(object):
     command = "ALLDUMPJSON"
     return json.loads(self._send_and_receive_tcp_command(command))
 
+  def all_list(self):
+    '''Execute the ALLLISTJSON command, this must be executed over TCP
+    Returns: {'mhtcounters': [name1, name2...], 'mht_samplers': [name1, name2...]}'''
+    command = "ALLLISTJSON"
+    return json.loads(self._send_and_receive_tcp_command(command))
+
   def _datetime_to_ms_since_epoch(self, dt):
     return time.mktime(dt.timetuple())
   
