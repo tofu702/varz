@@ -1,7 +1,8 @@
 import datetime
 import json
 import socket
-import time
+
+import utils
 
 class VARZClient(object):
   MODE_DEFAULT = 0
@@ -29,8 +30,8 @@ class VARZClient(object):
       mode (optional): Can be used to force either UDP or TCP mode
     Returns: None'''
     counter_name, time, mode = self._defaults_for_name_time_and_mode(counter_name, time, mode)
-    ms_since_epoch = self._datetime_to_ms_since_epoch(time)
-    command = "MHTCOUNTERADD %s %d %d" % (counter_name, ms_since_epoch, amt)
+    sec_since_epoch = utils.datetime_to_sec_since_epoch(time)
+    command = "MHTCOUNTERADD %s %d %d" % (counter_name, sec_since_epoch, amt)
     self._send_udp_command(command)
 
   def sampler_add(self, sampler_name, value, time=None, mode=None):
@@ -44,8 +45,8 @@ class VARZClient(object):
       mode (optional): Can be used to force either UDP or TCP mode
     Returns: None'''
     sampler_name, time, mode = self._defaults_for_name_time_and_mode(sampler_name, time, mode)
-    ms_since_epoch = self._datetime_to_ms_since_epoch(time)
-    command = "MHTSAMPLEADD %s %d %d" % (sampler_name, ms_since_epoch, value)
+    sec_since_epoch = utils.datetime_to_sec_since_epoch(time)
+    command = "MHTSAMPLEADD %s %d %d" % (sampler_name, sec_since_epoch, value)
     self._send_udp_command(command)
 
   def _defaults_for_name_time_and_mode(self, name, time, mode):
@@ -69,9 +70,7 @@ class VARZClient(object):
     command = "ALLLISTJSON"
     return json.loads(self._send_and_receive_tcp_command(command))
 
-  def _datetime_to_ms_since_epoch(self, dt):
-    return time.mktime(dt.timetuple())
-  
+
   def _send_udp_command(self, command_string):
     udp_address = (self.hostname, self.udp_port)
     self.udp_socket.sendto(command_string, udp_address)
