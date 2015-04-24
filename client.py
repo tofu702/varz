@@ -69,6 +69,12 @@ class VARZClient(object):
     command = "ALLLISTJSON"
     return json.loads(self._send_and_receive_tcp_command(command))
 
+  def all_flush(self):
+    '''Execute the ALLFLUSH command, this must be executed over TCP. This command will flush
+       everything on the varz server, so be very careful when calling it'''
+    command="ALLFLUSH"
+    self._send_and_receive_tcp_command(command)
+
   def _send_with_mode(self, command_string, mode):
     if mode == VARZClient.MODE_UDP:
       self._send_udp_command(command_string)
