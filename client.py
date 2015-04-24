@@ -5,7 +5,6 @@ import socket
 import utils
 
 class VARZClient(object):
-  MODE_DEFAULT = 0
   MODE_TCP = 1
   MODE_UDP = 2
   MAX_NAME_LEN = 128
@@ -32,7 +31,7 @@ class VARZClient(object):
     counter_name, time, mode = self._defaults_for_name_time_and_mode(counter_name, time, mode)
     sec_since_epoch = utils.datetime_to_sec_since_epoch(time)
     command = "MHTCOUNTERADD %s %d %d" % (counter_name, sec_since_epoch, amt)
-    self._send_udp_command(command)
+    self._send_with_mode(command, mode)
 
   def sampler_add(self, sampler_name, value, time=None, mode=None):
     '''Add a sample to the specified sampler. The varz daemon will of course only add the sample
@@ -47,7 +46,7 @@ class VARZClient(object):
     sampler_name, time, mode = self._defaults_for_name_time_and_mode(sampler_name, time, mode)
     sec_since_epoch = utils.datetime_to_sec_since_epoch(time)
     command = "MHTSAMPLEADD %s %d %d" % (sampler_name, sec_since_epoch, value)
-    self._send_udp_command(command)
+    self._send_with_mode(command, mode)
 
   def _defaults_for_name_time_and_mode(self, name, time, mode):
     if len(name) > VARZClient.MAX_NAME_LEN:
@@ -70,6 +69,11 @@ class VARZClient(object):
     command = "ALLLISTJSON"
     return json.loads(self._send_and_receive_tcp_command(command))
 
+  def _send_with_mode(self, command_string, mode):
+    if mode == VARZClient.MODE_UDP:
+      self._send_udp_command(command_string)
+    else:
+      return self._send_and_receive_tcp_command(command_string)
 
   def _send_udp_command(self, command_string):
     udp_address = (self.hostname, self.udp_port)
