@@ -30,7 +30,7 @@ class VARZClient(object):
     Returns: None'''
     counter_name, time, mode = self._defaults_for_name_time_and_mode(counter_name, time, mode)
     sec_since_epoch = utils.datetime_to_sec_since_epoch(time)
-    command = "MHTCOUNTERADD %s %d %d" % (counter_name, sec_since_epoch, amt)
+    command = "MHTCOUNTERADD %s %d %d;" % (counter_name, sec_since_epoch, amt)
     self._send_with_mode(command, mode)
 
   def sampler_add(self, sampler_name, value, time=None, mode=None):
@@ -45,7 +45,7 @@ class VARZClient(object):
     Returns: None'''
     sampler_name, time, mode = self._defaults_for_name_time_and_mode(sampler_name, time, mode)
     sec_since_epoch = utils.datetime_to_sec_since_epoch(time)
-    command = "MHTSAMPLEADD %s %d %d" % (sampler_name, sec_since_epoch, value)
+    command = "MHTSAMPLEADD %s %d %d;" % (sampler_name, sec_since_epoch, value)
     self._send_with_mode(command, mode)
 
   def _defaults_for_name_time_and_mode(self, name, time, mode):
@@ -60,19 +60,19 @@ class VARZClient(object):
   def all_dump(self):
     '''Execute the ALLDUMPJSON command, this must be executed over TCP
     Returns: <TODO>'''
-    command = "ALLDUMPJSON"
+    command = "ALLDUMPJSON;"
     return json.loads(self._send_and_receive_tcp_command(command))
 
   def all_list(self):
     '''Execute the ALLLISTJSON command, this must be executed over TCP
     Returns: {'mhtcounters': [name1, name2...], 'mht_samplers': [name1, name2...]}'''
-    command = "ALLLISTJSON"
+    command = "ALLLISTJSON;"
     return json.loads(self._send_and_receive_tcp_command(command))
 
   def all_flush(self):
     '''Execute the ALLFLUSH command, this must be executed over TCP. This command will flush
        everything on the varz server, so be very careful when calling it'''
-    command="ALLFLUSH"
+    command="ALLFLUSH;"
     self._send_and_receive_tcp_command(command)
 
   def _send_with_mode(self, command_string, mode):
