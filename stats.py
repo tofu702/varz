@@ -1,5 +1,10 @@
 import utils
 
+# TODO: Fix all these to take the current time and compute stats accordingly
+# For minutes this entails possibly returning 0 if the current minute is not the one we are looking at
+## We should also use the last minute, not the current minute
+# For hours, this means zeroing all data between the last sample and the current time
+
 class SamplerStats(object):
   
   def __init__(self, sampler_data):
@@ -7,30 +12,57 @@ class SamplerStats(object):
     self.sampler_data = sampler_data
 
   def last_minute_stats(self):
-    return self._compute_order_statistics(self.sampler_data["last_minute_samples"]["sample_values"])
+    # TODO: Lots of changes need to happen to make this the last full clock time minute
+    last_minute_samples = self.sampler_data["last_minute_samples"]
+    stats = self._compute_order_statistics(last_minute_samples["sample_values"])
+    stats["count"] = last_minute_samples["num_events"]
+    return stats
 
   def all_time_stats(self):
-    return self._compute_order_statistics(self.sampler_data["all_time_samples"]["sample_values"])
+    all_time_samples = self.sampler_data["all_time_samples"]
+    stats = self._compute_order_statistics(all_time_samples["sample_values"])
+    stats["count"] = all_time_samples["num_events"]
+    return stats
 
   def last_hour_stats(self):
-    last_hour_data = self._filter_last_n_seconds(sample_set=self.sampler_data["all_time_samples"],
+    # TODO: Minor changes for the last clock time hour
+    all_time_samples = self.sampler_data["all_time_samples"]
+    last_hour_data = self._filter_last_n_seconds(sample_set=all_time_samples,
                                                  end_time=self.sampler_data["latest_time_sec"],
                                                  num_sec_before_end=3600)
-    return self._compute_order_statistics(last_hour_data)
+    stats = self._compute_order_statistics(last_hour_data)
+    stats["count"] = self._estimate_num_events_in_last_hour(all_time_samples, len(last_hour_data))
+    return stats
+
+  def _estimate_num_events_in_last_hour(self, all_time_samples, num_last_hour_samples):
+    num_all_time_events = all_time_samples["num_events"]
+    num_total_all_time_samples = all_time_samples["samples_size"]
+    # Multiply then divide so we can do this entirely with ints
+    return (num_all_time_events * num_last_hour_samples) / num_total_all_time_samples
 
   def _compute_order_statistics(self, samples):
-    '''Compute the median, 95th percentile
+    '''Compute the median, quartiles, 95th percentile and largest_value (largest sample value)
     Arguments
       samples: An array of integers [sample1, sample2, ...]
-    Returns: {'median': #, 'percentile_95': 95th_percentile}'''
+    Returns: {'quartile_1': #, 'median': #,  'quartile_3' #, 'percentile_95': #, 'largest_value': #}
+    '''
     if not samples:
-      return {"median": 0, "percentile_95": 0}
+      return {"quartile_1": 0, "median": 0, "quartile_3": 0, "percentile_95": 0, "largest_value": 0}
     sorted_samples = sorted(samples)
     num_samples = len(sorted_samples)
+    pos_quartile1 = (num_samples) / 4
+    pos_quartile3 = (num_samples * 3)  / 4
     pos_95 = (num_samples * 95) / 100
+    quartile1 = sorted_samples[pos_quartile1]
     median = sorted_samples[num_samples/2]
+    quartile3 = sorted_samples[pos_quartile3]
     percentile_95 = sorted_samples[pos_95]
-    return {"median": median, "percentile_95": percentile_95}
+    largest_value = sorted_samples[-1]
+    return {"quartile_1": quartile1,
+            "median": median,
+            "quartile_3": quartile3,
+            "percentile_95": percentile_95,
+            "largest_value": largest_value}
 
   def _filter_last_n_seconds(self, sample_set, end_time, num_sec_before_end):
     '''Filter the provided samples array for samples up to num_sec after the supplied end_time
