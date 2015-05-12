@@ -7,15 +7,22 @@ import utils
 
 class SamplerStats(object):
   
-  def __init__(self, sampler_data):
+  def __init__(self, sampler_data, current_epoch_sec):
     '''Assumes that sampler_data is an SAMPLER_JSON object, per the protocol definition'''
     self.sampler_data = sampler_data
+    self.current_epoch_sec = current_epoch_sec
+    self.current_min = utils.epoch_sec_to_minutes_since_epoch(self.current_epoch_sec)
 
   def last_minute_stats(self):
     # TODO: Lots of changes need to happen to make this the last full clock time minute
-    last_minute_samples = self.sampler_data["last_minute_samples"]
-    stats = self._compute_order_statistics(last_minute_samples["sample_values"])
-    stats["count"] = last_minute_samples["num_events"]
+    latest_min  = utils.epoch_sec_to_minutes_since_epoch(self.sampler_data["latest_time_sec"])
+    if latest_min != self.current_min:
+      stats = self._compute_order_statistics([])
+      stats["count"] = 0
+    else:
+      last_minute_samples = self.sampler_data["last_minute_samples"]
+      stats = self._compute_order_statistics(last_minute_samples["sample_values"])
+      stats["count"] = last_minute_samples["num_events"]
     return stats
 
   def all_time_stats(self):
@@ -25,10 +32,9 @@ class SamplerStats(object):
     return stats
 
   def last_hour_stats(self):
-    # TODO: Minor changes for the last clock time hour
     all_time_samples = self.sampler_data["all_time_samples"]
     last_hour_data = self._filter_last_n_seconds(sample_set=all_time_samples,
-                                                 end_time=self.sampler_data["latest_time_sec"],
+                                                 end_time=self.current_epoch_sec,
                                                  num_sec_before_end=3600)
     stats = self._compute_order_statistics(last_hour_data)
     stats["count"] = self._estimate_num_events_in_last_hour(all_time_samples, len(last_hour_data))

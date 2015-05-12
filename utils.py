@@ -6,8 +6,11 @@ def datetime_to_sec_since_epoch(dt):
      aware'''
   return time.mktime(dt.timetuple())
 
-def sec_since_epoch_to_datetime(ms_since_epoch):
+def sec_since_epoch_to_datetime(sec_since_epoch):
   '''Take some number seconds since the epoch and convert them to a python datetime object. Not
      timezone aware'''
-  return datetime.datetime.fromtimestamp(ms_since_epoch)
+  return datetime.datetime.fromtimestamp(sec_since_epoch)
 
+def epoch_sec_to_minutes_since_epoch(sec_since_epoch):
+  '''Return the number of minutes since the epoch (quite a large number)'''
+  return (sec_since_epoch / 60) % 60
