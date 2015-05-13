@@ -98,5 +98,50 @@ class SamplerStatsTestCase(unittest.TestCase):
     self.assertEquals(0, hr_stats["count"])
 
 
+class CounterStatsTestCase(unittest.TestCase):
+  def setUp(self):
+    pass
+
+  def createFakeData(self, latest_time_sec=615*60):
+    return {"min_counters": range(0,60),
+            "all_time_count": 5000,
+            "latest_time_sec": latest_time_sec}
+
+  def test_last_minute_count(self):
+    s = stats.CounterStats(self.createFakeData(), 615*60)
+    self.assertEquals(15, s.last_minute_count())
+
+  def test_last_minute_count_diff_second_in_same_minute(self):
+    s = stats.CounterStats(self.createFakeData(), 615*60+15)
+    self.assertEquals(15, s.last_minute_count())
+
+  def test_last_minute_count_for_prior_minute_returns_zero(self):
+    s = stats.CounterStats(self.createFakeData(), 616*60)
+    self.assertEquals(0, s.last_minute_count())
+   
+  def test_last_minute_count_returns_zero_for_future_minute(self):
+    s = stats.CounterStats(self.createFakeData(), 614*60)
+    self.assertEquals(0, s.last_minute_count())
+
+  def test_last_hour_count_for_full_hour(self):
+    s = stats.CounterStats(self.createFakeData(), 615*60)
+    self.assertEquals(1770, s.last_hour_count())
+
+  def test_last_hour_count_for_partial_hour(self):
+    s = stats.CounterStats(self.createFakeData(), 620*60)
+    self.assertEquals(1770-16-17-18-19-20, s.last_hour_count())
+
+  def test_last_hour_count_returns_zero_for_more_than_1_hr_ahead(self):
+    s = stats.CounterStats(self.createFakeData(), 675*60)
+    self.assertEquals(0, s.last_hour_count())
+
+  def test_last_hour_count_returns_zero_for_future_time(self):
+    s = stats.CounterStats(self.createFakeData(), 610*60)
+    self.assertEquals(0, s.last_hour_count())
+
+  def test_all_time_count(self):
+    s = stats.CounterStats(self.createFakeData(), 610*60)
+    self.assertEquals(5000, s.all_time_count())
+
 if __name__ == "__main__":
   unittest.main()

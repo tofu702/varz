@@ -1,3 +1,5 @@
+import datetime
+
 import utils
 
 # TODO: Fix all these to take the current time and compute stats accordingly
@@ -84,18 +86,64 @@ class SamplerStats(object):
 
 
 class CounterStats(object):
-  def __init__(self, counter_data):
+  def __init__(self, counter_data, current_epoch_sec):
     '''Assumes that the counter_data is the COUNTER_JSON object per the protocol definition'''
     self.counter_data = counter_data
+    self.current_epoch_sec = current_epoch_sec
 
   def last_minute_count(self):
-    # Compute which minute the last one is and use it's value
-    last_min = utils.sec_since_epoch_to_datetime(self.counter_data["latest_time_sec"]).minute
-    return self.counter_data["min_counters"][last_min]
+    # TODO: Make this the prior minute to the current one; only change when SamplerStats has
+    # similar behavior
+    curr_time_dt = utils.sec_since_epoch_to_datetime(self.current_epoch_sec)
+    last_min_since_epoch = utils.epoch_sec_to_minutes_since_epoch(self.counter_data["latest_time_sec"])
+    curr_min_since_epoch = utils.epoch_sec_to_minutes_since_epoch(self.current_epoch_sec)
+
+
+    # It actually wouldn't be that hard to handle the case where we have data beyond the
+    # current_time, but let's not bother
+    # Obviously, if the curr_min is ahead of the last_min_since_epoch, we don't have data
+    if curr_min_since_epoch != last_min_since_epoch:
+      return 0
+
+    curr_min_of_hour = curr_time_dt.minute
+    return self.counter_data["min_counters"][curr_min_of_hour]
 
   def last_hour_count(self):
-    # TODO: Better handling of partial hours
-    return sum(self.counter_data["min_counters"])
+    last_min_since_epoch = utils.epoch_sec_to_minutes_since_epoch(self.counter_data["latest_time_sec"])
+    curr_min_since_epoch = utils.epoch_sec_to_minutes_since_epoch(self.current_epoch_sec)
+
+    # If the current time is more than 1 hour aheads of the data return 0
+    # OR
+    # We somehow have data ahead of the current_time (we won't try to resolve that)
+    difference_btw_curr_and_last = curr_min_since_epoch - last_min_since_epoch
+    if difference_btw_curr_and_last >= 60 or difference_btw_curr_and_last < 0:
+      return 0
+
+    # Example:
+    # curr_min_since_epoch = 620  / curr_min_since_epoch = 20
+    # last_min_since_epoch = 615  / last_min_of_hour_with_data = 15
+    # The array therefore looks something like
+    # counter_data[14] = Data from 614
+    # counter_data[15] = Data from 615 (last recorded value, 0 minutes old)
+    # counter_data[16] = Data from 556 (64 minutes old)
+    # counter_data[20] = Data from 560 (60 minutes old)
+    # Thus we want values starting from position 15 going backward through position 21
+
+    last_min_of_hour_with_data = last_min_since_epoch % 60
+    num_mins_with_data_in_last_hour = 60 - difference_btw_curr_and_last
+    filtered_mins = self._filter_counters_data(last_min_of_hour_with_data,
+                                               num_mins_with_data_in_last_hour,
+                                               self.counter_data["min_counters"]) 
+    return sum(filtered_mins)
+
+  def _filter_counters_data(self, start_minute, num_minutes_to_go_back, min_counters):
+    '''Start at the provided start_minute and provide the minutes for the next 
+       num_minutes_to_go_back minutes, throwing the rest out'''
+    filtered_mins = []
+    for i in range(0, num_minutes_to_go_back):
+      cur_min_pos = (start_minute - i) % 60
+      filtered_mins.append(min_counters[cur_min_pos])
+    return filtered_mins
 
   def all_time_count(self):
     return self.counter_data["all_time_count"]
