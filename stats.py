@@ -2,10 +2,6 @@ import datetime
 
 import utils
 
-# TODO: Fix all these to take the current time and compute stats accordingly
-# For minutes this entails possibly returning 0 if the current minute is not the one we are looking at
-## We should also use the last minute, not the current minute
-# For hours, this means zeroing all data between the last sample and the current time
 
 class SamplerStats(object):
   
