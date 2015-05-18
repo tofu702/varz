@@ -6,31 +6,31 @@ import stats
 import utils
 
 def print_samplers(samplers, current_epoch_sec):
-  print "%16s  ||   %21s   ||   %21s   ||   %21s" % (
+  print "%64s  ||   %21s   ||   %21s   ||   %21s" % (
       "", "Last Minute", "Last Hour", "All Time"
   )
-  print "%16s  ||   %10s %10s   ||   %10s %10s   ||   %10s %10s" % (
+  print "%64s  ||   %10s %10s   ||   %10s %10s   ||   %10s %10s" % (
       "name", "median", "95th", "median", "95th", "median", "95th"
   )
-  print "-" * 110
+  print "-" * 150
   for sampler_wrapper in samplers:
     sampler_stats = stats.SamplerStats(sampler_wrapper["value"], current_epoch_sec)
     minute_stats = sampler_stats.last_minute_stats()
     hour_stats = sampler_stats.last_hour_stats()
     all_time_stats = sampler_stats.all_time_stats()
-    print "%16s  ||   %10d %10d   ||   %10d %10d   ||   %10d %10d" %  \
+    print "%64s  ||   %10d %10d   ||   %10d %10d   ||   %10d %10d" %  \
         (sampler_wrapper["name"],
          minute_stats["median"], minute_stats["percentile_95"],
          hour_stats["median"], hour_stats["percentile_95"],
          all_time_stats["median"], all_time_stats["percentile_95"])
 
 def print_counters(counters, current_epoch_sec):
-  print "%16s  ||  %10s  ||  %10s  ||  %10s" % (
+  print "%64s  ||  %10s  ||  %10s  ||  %10s" % (
     "name", "last min", "last hr", "all time")
-  print "-" * 110
+  print "-" * 150
   for counter_wrapper in counters:
     counter_stats = stats.CounterStats(counter_wrapper["value"], current_epoch_sec)
-    print "%16s  ||  %10d  ||  %10d  ||  %10d" % \
+    print "%64s  ||  %10d  ||  %10d  ||  %10d" % \
         (counter_wrapper["name"],
          counter_stats.last_minute_count(),
          counter_stats.last_hour_count(),
