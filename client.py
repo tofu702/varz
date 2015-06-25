@@ -17,10 +17,12 @@ class VARZClient(object):
     self.udp_port = udp_port
     self.tcp_port = tcp_port
     self.udp_socket = None
+    self.host_ip = None
 
   def setup(self):
-    '''Create sockets'''
+    '''Create sockets and cache resolved hostname'''
     self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    self.host_ip = socket.gethostbyname(self.hostname)
 
   def counter_increment(self, counter_name, amt=1, time=None, mode=None):
     '''Increment a varz counter variable on the remote hosts.
@@ -38,7 +40,7 @@ class VARZClient(object):
 
   def sampler_add(self, sampler_name, value, time=None, mode=None):
     '''Add a sample to the specified sampler. The varz daemon will of course only add the sample
-       if its sampling requirements are satisfied. 
+       if its sampling requirements are satisfied.
     Arguments:
       sampler_name: A name for the sampler, must be less than 128 characters. Cannot have whitespace
       value: The value of the sample
@@ -85,10 +87,10 @@ class VARZClient(object):
       return self._send_and_receive_tcp_command(command_string)
 
   def _send_udp_command(self, command_string):
-    udp_address = (self.hostname, self.udp_port)
+    udp_address = (self.host_ip, self.udp_port)
     self.udp_socket.sendto(command_string, udp_address)
 
-  def _send_and_receive_tcp_command(self, command_string): 
+  def _send_and_receive_tcp_command(self, command_string):
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.connect((self.hostname, self.tcp_port))
     try:
